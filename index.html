@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MONOLÍTICA EBS — Arquitectura Forense</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Serif+Display:ital@0;1&family=DM+Mono:ital,wght@0,300;0,400;1,300&display=swap" rel="stylesheet">
+<style>
+:root {
+  --negro: #090907;
+  --crudo: #ede8db;
+  --oxido: #b84a1e;
+  --cemento: #7a7568;
+  --papel: #f5f0e4;
+  --verde: #2a6b3c;
+  --amarillo: #c49a1a;
+  --rojo: #9b1c1c;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  background: var(--negro);
+  color: var(--crudo);
+  font-family: 'DM Mono', monospace;
+  font-weight: 300;
+  overflow-x: hidden;
+}
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: 9999;
+}
+nav {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 100;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.2rem 2rem;
+  background: linear-gradient(to bottom, var(--negro) 60%, transparent);
+}
+.nav-marca {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 1.1rem;
+  letter-spacing: 0.1em;
+}
+.nav-sub {
+  font-size: 0.55rem;
+  letter-spacing: 0.2em;
+  color: var(--cemento);
+  text-transform: uppercase;
+}
+.hero {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 8rem 2rem 4rem;
+  position: relative;
+  border-bottom: 1px solid #1c1c18;
+}
+.hero-tag {
+  font-size: 0.58rem;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: var(--oxido);
+  margin-bottom: 2rem;
+  opacity: 0;
+  animation: up 1s ease 0.3s forwards;
+}
+h1 {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: clamp(3.5rem, 10vw, 10rem);
+  line-height: 0.92;
+  opacity: 0;
+  animation: up 1.2s ease 0.5s forwards;
+}
+h1 em {
+  font-family: 'DM Serif Display', serif;
+  font-style: italic;
+  color: var(--oxido);
+}
+.hero-bajada {
+  margin-top: 2.5rem;
+  max-width: 480px;
+  font-size: 0.78rem;
+  line-height: 1.9;
+  color: var(--cemento);
+  opacity: 0;
+  animation: up 1s ease 0.9s forwards;
+}
+.hero-bajada strong { color: var(--crudo); font-weight: 400; }
+.hero-linea {
+  position: absolute;
+  right: 2rem; top: 50%;
+  transform: translateY(-50%);
+  writing-mode: vertical-rl;
+  font-size: 0.55rem;
+  letter-spacing: 0.25em;
+  color: var(--cemento);
+  opacity: 0;
+  animation: up 1s ease 1.2s forwards;
+}
+.sec {
+  padding: 6rem 2rem;
+  border-bottom: 1px solid #1c1c18;
+}
+.sec-tag {
+  font-size: 0.55rem;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: var(--oxido);
+  margin-bottom: 3rem;
+}
+.pregunta-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1px;
+  background: #1c1c18;
+}
+@media (max-width: 860px) { .pregunta-grid { grid-template-columns: 1fr; } }
+.pcard {
+  background: var(--negro);
+  padding: 2.5rem 2rem;
+  position: relative;
+  transition: background 0.3s;
+}
+.pcard:hover { background: #0f0f0c; }
+.pcard::after {
+  content: '';
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 2px;
+  background: var(--oxido);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.4s ease;
+}
+.pcard:hover::after { transform: scaleX(1); }
+.pnum {
+  font-size: 0.55rem;
+  letter-spacing: 0.25em;
+  color: var(--oxido);
+  margin-bottom: 1.5rem;
+  display: block;
+}
+.pcard h2 {
+  font-family: 'DM Serif Display', serif;
+  font-style: italic;
+  font-size: clamp(1.2rem, 2vw, 1.7rem);
+  line-height: 1.2;
+  color: var(--crudo);
+  margin-bottom: 1.2rem;
+  font-weight: 400;
+}
+.pcard p {
+  font-size: 0.7rem;
+  line-height: 1.8;
+  color: var(--cemento);
+}
+.canal {
+  margin-top: 1.5rem;
+  font-size: 0.55rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--cemento);
+  border-top: 1px solid #1c1c18;
+  padding-top: 1rem;
+}
+.fcscore-interior { max-width: 800px; }
+.fcscore-interior h2 {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: clamp(2.5rem, 6vw, 5rem);
+  line-height: 0.95;
+  margin-bottom: 1rem;
+}
+.fcscore-interior h2 em {
+  font-family: 'DM Serif Display', serif;
+  font-style: italic;
+  color: var(--oxido);
+}
+.fcscore-sub {
+  font-size: 0.72rem;
+  color: var(--cemento);
+  line-height: 1.8;
+  margin-bottom: 3rem;
+  max-width: 500px;
+}
+.semaforo {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1px;
+  background: #1c1c18;
+}
+@media (max-width: 600px) { .semaforo { grid-template-columns: 1fr; } }
+.sitem {
+  background: var(--negro);
+  padding: 2rem 1.5rem;
+  display: flex;
+  gap: 1.2rem;
+  align-items: flex-start;
+}
+.sdot {
+  width: 10px; height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  margin-top: 0.3rem;
+}
+.sv { background: var(--verde); box-shadow: 0 0 10px var(--verde); }
+.sa { background: var(--amarillo); box-shadow: 0 0 10px var(--amarillo); }
+.sr { background: var(--rojo); box-shadow: 0 0 10px var(--rojo); }
+.stexto h4 {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 1rem;
+  letter-spacing: 0.08em;
+  margin-bottom: 0.4rem;
+}
+.stexto p { font-size: 0.65rem; line-height: 1.7; color: var(--cemento); }
+.frase-sec {
+  padding: 8rem 2rem;
+  text-align: center;
+  border-bottom: 1px solid #1c1c18;
+}
+blockquote {
+  font-family: 'DM Serif Display', serif;
+  font-style: italic;
+  font-size: clamp(1.4rem, 3.5vw, 2.8rem);
+  line-height: 1.25;
+  color: var(--crudo);
+  max-width: 780px;
+  margin: 0 auto 1.5rem;
+  font-weight: 400;
+}
+blockquote span { color: var(--oxido); }
+.fattr { font-size: 0.58rem; letter-spacing: 0.25em; text-transform: uppercase; color: var(--cemento); }
+.quien {
+  padding: 6rem 2rem;
+  border-bottom: 1px solid #1c1c18;
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  gap: 6rem;
+  align-items: start;
+}
+@media (max-width: 768px) {
+  .quien { grid-template-columns: 1fr; gap: 2rem; }
+  .hero-linea { display: none; }
+}
+.quien-titulo {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: clamp(2rem, 5vw, 4rem);
+  line-height: 0.95;
+}
+.quien-titulo em { font-family: 'DM Serif Display', serif; font-style: italic; color: var(--oxido); }
+.quien-cuerpo { font-size: 0.75rem; line-height: 2; color: var(--cemento); }
+.quien-cuerpo p + p { margin-top: 1rem; }
+.quien-cuerpo strong { color: var(--crudo); font-weight: 400; }
+.datos { margin-top: 2rem; border-top: 1px solid #1c1c18; }
+.dato {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.7rem 0;
+  border-bottom: 1px solid #1c1c18;
+  font-size: 0.62rem;
+  letter-spacing: 0.05em;
+}
+.dato span:first-child { color: var(--cemento); }
+.dato span:last-child { color: var(--crudo); text-align: right; }
+.contacto-sec { padding: 6rem 2rem 4rem; }
+.contacto-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4rem;
+  align-items: end;
+}
+@media (max-width: 600px) { .contacto-grid { grid-template-columns: 1fr; gap: 2rem; } }
+.contacto-sec h2 {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: clamp(2.5rem, 7vw, 6rem);
+  line-height: 0.92;
+}
+.contacto-sec h2 em { font-family: 'DM Serif Display', serif; font-style: italic; color: var(--oxido); }
+.cinfo { font-size: 0.7rem; line-height: 2.2; color: var(--cemento); }
+.cinfo a { color: var(--crudo); text-decoration: none; border-bottom: 1px solid var(--oxido); transition: color 0.2s; }
+.cinfo a:hover { color: var(--oxido); }
+.cdominio {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 1.1rem;
+  letter-spacing: 0.05em;
+  color: var(--crudo);
+  display: block;
+  margin-bottom: 0.5rem;
+}
+footer {
+  padding: 2rem;
+  border-top: 1px solid #1c1c18;
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.52rem;
+  letter-spacing: 0.15em;
+  color: #3a3a32;
+  text-transform: uppercase;
+}
+@keyframes up {
+  from { opacity: 0; transform: translateY(24px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.reveal { opacity: 0; transform: translateY(28px); transition: opacity 0.9s ease, transform 0.9s ease; }
+.reveal.on { opacity: 1; transform: none; }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-marca">MONOLÍTICA EBS</div>
+  <div class="nav-sub">Arquitectura Forense · Buenos Aires</div>
+</nav>
+
+<section class="hero">
+  <div class="hero-tag">Corpus AF2 v7.0 · Lex Artis · Score MEBS-OBS v1.0</div>
+  <h1>El edificio<br>siempre dice<br><em>la verdad.</em><br>Las personas<br>no siempre.</h1>
+  <p class="hero-bajada">
+    <strong>Lo que no se documentó antes genera responsabilidad automática.</strong><br><br>
+    MONOLÍTICA EBS identifica el incumplimiento de lex artis, nomina al responsable y cuantifica la deuda técnica en moneda constante.<br><br>
+    Lo que no se nombra, no se cobra.
+  </p>
+  <div class="hero-linea">arquitecturaforense.com.ar · Buenos Aires · 2026</div>
+</section>
+
+<section class="sec reveal">
+  <div class="sec-tag">— Las tres preguntas que nadie responde</div>
+  <div class="pregunta-grid">
+    <div class="pcard">
+      <span class="pnum">01 —</span>
+      <h2>¿Cuánto vale la deuda técnica de tu edificio?</h2>
+      <p>Un activo de USD 3.000.000 puede tener entre USD 300.000 y USD 750.000 de pasivo invisible que no aparece en ningún balance ni tasación convencional. Aplicando la Regla de Sitter, esa deuda se multiplica por cinco en cada estadio de avance del deterioro.</p>
+      <div class="canal">Canal · Consorcio · Inversor</div>
+    </div>
+    <div class="pcard">
+      <span class="pnum">02 —</span>
+      <h2>¿Qué norma incumplió la constructora?</h2>
+      <p>CIRSOC, Ley 941, Código de Edificación, IRAM, Art. 14 bis. Cada patología tiene una norma que la prohíbe y un responsable que firmó que estaba bien. El corpus AF2 v7.0 los identifica, los codifica y los cuantifica en moneda constante.</p>
+      <div class="canal">Canal · Jurídico · Daño Venal</div>
+    </div>
+    <div class="pcard">
+      <span class="pnum">03 —</span>
+      <h2>¿Qué no documentó el administrador antes del siniestro?</h2>
+      <p>Sin relevamiento previo, el seguro no paga y el administrador firmó en blanco desde el día uno. Bajo Ley 941, la responsabilidad civil es personal y solidaria. El documento que falta es el único que obliga a la aseguradora a cumplir.</p>
+      <div class="canal">Canal · Seguros · Responsabilidad Civil</div>
+    </div>
+  </div>
+</section>
+
+<section class="sec reveal">
+  <div class="fcscore-interior">
+    <div class="sec-tag">— FC-Score · El semáforo del riesgo</div>
+    <h2>¿En qué estadio<br>está tu <em>edificio?</em></h2>
+    <p class="fcscore-sub">El Score MEBS-OBS v1.0 clasifica el estado real del inmueble en tres niveles de riesgo documentables y accionables. No es una opinión — es un protocolo.</p>
+    <div class="semaforo">
+      <div class="sitem">
+        <div class="sdot sv"></div>
+        <div class="stexto">
+          <h4>Verde</h4>
+          <p>Mantenimiento programable. Deuda técnica cuantificada y controlable. Intervención preventiva: costo base ×1.</p>
+        </div>
+      </div>
+      <div class="sitem">
+        <div class="sdot sa"></div>
+        <div class="stexto">
+          <h4>Amarillo</h4>
+          <p>Daño venal en curso. Deterioro activo con responsable identificable. Intervención correctiva: costo ×5 a ×25. Ventana de 80 días.</p>
+        </div>
+      </div>
+      <div class="sitem">
+        <div class="sdot sr"></div>
+        <div class="stexto">
+          <h4>Rojo</h4>
+          <p>Siniestro inminente o riesgo penal. Dolo eventual documentable. Corrosión activa de armadura. Costo ×40 o más.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="frase-sec reveal">
+  <blockquote>
+    "Antes de firmar la escritura<br>sabés exactamente
+    <span>qué hipoteca invisible estás comprando.</span>"
+  </blockquote>
+  <div class="fattr">MONOLÍTICA EBS · Principio operativo</div>
+</section>
+
+<section class="quien reveal">
+  <div class="quien-titulo">El equipo<br>es el<br><em>sistema.</em></div>
+  <div>
+    <div class="quien-cuerpo">
+      <p>MONOLÍTICA EBS es una práctica de arquitectura forense con corpus técnico propio. <strong>No un estudio. No una consultora.</strong> Un equipo especializado en identificar lo que los demás no ven, documentarlo y cuantificarlo. Una o dos intervenciones semanales, honorarios de activo, casos selectivos.</p>
+      <p>Detrás del corpus AF2 v7.0 hay arquitectura, química aplicada, física estructural, economía del deterioro y derecho. Lo que sale de una inspección de campo no es una opinión — es el resultado de un sistema que lleva años calibrado. La escala viene del precio por caso, no del volumen.</p>
+      <p><strong>El diferenciador no es el informe — es la nomenclatura.</strong> Ningún otro equipo en Argentina tiene un corpus codificado propio con familias de patología, matriz de trazabilidad y score de campo integrados. El protocolo no opina. Certifica.</p>
+    </div>
+    <div class="datos">
+      <div class="dato"><span>Corpus</span><span>AF2 v7.0</span></div>
+      <div class="dato"><span>Score</span><span>MEBS-OBS v1.0</span></div>
+      <div class="dato"><span>Disciplinas</span><span>Arquitectura · Química · Física · Derecho · Economía</span></div>
+      <div class="dato"><span>Modalidad</span><span>Equipo técnico · Casos selectivos</span></div>
+      <div class="dato"><span>Dominio</span><span>arquitecturaforense.com.ar</span></div>
+    </div>
+  </div>
+</section>
+
+<section class="contacto-sec reveal">
+  <div class="contacto-grid">
+    <h2>El edificio<br>ya habló.<br>¿Lo <em>escuchaste?</em></h2>
+    <div class="cinfo">
+      <span class="cdominio">arquitecturaforense.com.ar</span>
+      Intervenciones selectivas · Buenos Aires · CABA<br>
+      Consultas por canal jurídico, inversor y consorcio<br><br>
+      <a href="/cdn-cgi/l/email-protection#b7d4d8d9c3d6d4c3d8f7d6c5c6c2dec3d2d4c3c2c5d6d1d8c5d2d9c4d299d4d8da99d6c5"><span class="__cf_email__" data-cfemail="bcdfd3d2c8dddfc8d3fcddcecdc9d5c8d9dfc8c9cedddad3ced9d2cfd992dfd3d192ddce">[email&#160;protected]</span></a>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <span>MONOLÍTICA EBS · Arquitectura Forense · © 2026</span>
+  <span>AF2 v7.0 · Buenos Aires · Argentina</span>
+</footer>
+
+<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode
